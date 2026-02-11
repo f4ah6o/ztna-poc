@@ -1,0 +1,23 @@
+{
+  "realm": "netbird",
+  "enabled": true,
+  "displayName": "NetBird Realm",
+  "clients": [
+    {
+      "clientId": "netbird",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "redirectUris": [
+        "https://netbird.example.com/*",
+        "https://netbird-ui.example.com/*"
+      ],
+      "webOrigins": [
+        "+"
+      ]
+    }
+  ]
+}
