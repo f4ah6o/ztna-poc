@@ -14,23 +14,50 @@ init-env:
   bash scripts/gen-env.sh
 
 config: init-env
-  docker compose -f {{compose_file}} config
+  bash scripts/compose.sh config
 
 up: init-env
-  docker compose -f {{compose_file}} up -d
-  docker compose -f {{compose_file}} ps
+  bash scripts/compose.sh up -d
+  bash scripts/compose.sh ps
+
+demo: init-env
+  bash scripts/demo/demo.sh
+
+demo-prereq: init-env
+  bash scripts/compose.sh up -d
+  bash scripts/compose.sh --profile demo up -d scim-bridge nb-router internal-app
+
+demo-reset:
+  bash scripts/compose.sh --profile demo rm -sfv demo-client internal-app nb-router scim-bridge || true
+
+demo-clean-netbird:
+  bash scripts/demo/clean-netbird-volumes.sh
+
+demo-logs service="":
+  if [ -n "{{service}}" ]; then \
+    bash scripts/compose.sh --profile demo logs -f --tail=100 "{{service}}"; \
+  else \
+    bash scripts/compose.sh --profile demo logs -f --tail=100; \
+  fi
+
+demo-logs-once service="":
+  if [ -n "{{service}}" ]; then \
+    bash scripts/compose.sh --profile demo logs --tail=200 "{{service}}"; \
+  else \
+    bash scripts/compose.sh --profile demo logs --tail=200; \
+  fi
 
 down:
-  docker compose -f {{compose_file}} down
+  bash scripts/compose.sh down
 
 restart: down up
 
 ps:
-  docker compose -f {{compose_file}} ps
+  bash scripts/compose.sh ps
 
 logs service="":
   if [ -n "{{service}}" ]; then \
-    docker compose -f {{compose_file}} logs -f --tail=100 "{{service}}"; \
+    bash scripts/compose.sh logs -f --tail=100 "{{service}}"; \
   else \
-    docker compose -f {{compose_file}} logs -f --tail=100; \
+    bash scripts/compose.sh logs -f --tail=100; \
   fi

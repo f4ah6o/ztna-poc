@@ -56,6 +56,7 @@ just restart
 just ps
 just logs
 just logs keycloak
+just demo-clean-netbird
 ```
 
 ## 任意: Nix コマンド
@@ -74,6 +75,30 @@ nix run .#down
 - `NB_DOMAIN`
 - `NB_UI_DOMAIN`
 - `MP_HOSTNAME`
+
+`.env` の既定値を使う場合のアクセス先:
+
+- `https://keycloak.localtest.me` (Keycloak)
+- `https://netbird.localtest.me` (NetBird Management API)
+- `https://netbird-ui.localtest.me` (NetBird Dashboard / SSO)
+- `https://midpoint.localtest.me` (midPoint)
+
+`just demo` 実行後の最終確認:
+
+- NetBird の SSO を完了
+- `demo-client` から `nb-router` 配下の内部ページ `hello internal world` を取得できることをスクリプトが検証
+
+デモの認証分担:
+
+- `nb-router`: setup key で非対話登録
+- `demo-client`: ブラウザ SSO で対話登録
+
+`just demo` が失敗したときの最短切り分け:
+
+- `just demo-logs-once nb-router`
+- `just demo-logs-once netbird`
+- `just demo-logs-once netbird-signal`
+- NetBird 関連状態を掃除して再試行する場合: `just demo-clean-netbird`
 
 ## 補足
 

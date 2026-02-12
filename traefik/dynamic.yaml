@@ -1,4 +1,7 @@
 tls:
+  certificates:
+    - certFile: /etc/traefik/certs/localtest.pem
+      keyFile: /etc/traefik/certs/localtest-key.pem
   options:
     default:
       minVersion: VersionTLS12

@@ -1,6 +1,8 @@
 services:
   traefik:
-    image: traefik:v3.1
+    image: traefik:latest
+    environment:
+      DOCKER_API_VERSION: "1.44"
     command:
       - --configFile=/etc/traefik/traefik.yaml
     ports:
@@ -10,6 +12,7 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./traefik/traefik.yaml:/etc/traefik/traefik.yaml:ro
       - ./traefik/dynamic.yaml:/etc/traefik/dynamic.yaml:ro
+      - ./traefik/certs:/etc/traefik/certs:ro
       - traefik_letsencrypt:/letsencrypt
     networks:
       - edge
@@ -29,11 +32,12 @@ services:
 
   keycloak:
     image: quay.io/keycloak/keycloak:26.0
-    command: ["start", "--optimized"]
+    command: ["start"]
     environment:
-      KC_PROXY: edge
+      KC_PROXY_HEADERS: xforwarded
       KC_HTTP_ENABLED: "true"
-      KC_HOSTNAME: ${KC_HOSTNAME}
+      KC_HOSTNAME: https://${KC_HOSTNAME}
+      KC_HOSTNAME_STRICT: "false"
       KC_DB: postgres
       KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
       KC_DB_USERNAME: keycloak
@@ -54,31 +58,60 @@ services:
     restart: unless-stopped
 
   netbird:
-    image: netbirdio/management:v0.36.7
+    image: netbirdio/management:0.64.5
+    command:
+      - --port
+      - "80"
+      - --log-file
+      - console
+      - --log-level
+      - info
+      - --disable-anonymous-metrics=true
+      - --single-account-mode-domain=${NB_ACCOUNT_DOMAIN:-localtest.me}
+      - --dns-domain=${NB_DOMAIN}
+      - --idp-sign-key-refresh-enabled
     environment:
-      NB_DOMAIN: ${NB_DOMAIN}
-      NB_DISABLE_ANONYMOUS_METRICS: "true"
-      NETBIRD_STORE_ENGINE: postgres
-      NETBIRD_STORE_DSN: postgres://netbird:${NB_DB_PASSWORD}@postgres:5432/netbird?sslmode=disable
-      NETBIRD_AUTH_OIDC_CONFIGURATION_ENDPOINT: https://${KC_HOSTNAME}/realms/${KC_REALM}/.well-known/openid-configuration
-      NETBIRD_AUTH_OIDC_CLIENT_ID: ${NB_OIDC_CLIENT_ID}
-      NETBIRD_AUTH_OIDC_CLIENT_SECRET: ${NB_OIDC_CLIENT_SECRET}
+      NETBIRD_STORE_ENGINE_POSTGRES_DSN: postgres://netbird:${NB_DB_PASSWORD}@postgres:5432/netbird?sslmode=disable
+    volumes:
+      - ./netbird/management.json:/etc/netbird/management.json:ro
+      - nb_data:/var/lib/netbird
+    ports:
+      - "33073:80"
     labels:
       - traefik.enable=true
       - traefik.http.routers.netbird.rule=Host(`${NB_DOMAIN}`)
       - traefik.http.routers.netbird.entrypoints=websecure
       - traefik.http.routers.netbird.tls=true
       - traefik.http.services.netbird.loadbalancer.server.port=80
+      - traefik.http.services.netbird.loadbalancer.server.scheme=h2c
     depends_on:
       - postgres
       - keycloak
+      - netbird-signal
+    extra_hosts:
+      - "${KC_HOSTNAME}:host-gateway"
+      - "${NB_DOMAIN}:host-gateway"
+      - "${NB_UI_DOMAIN}:host-gateway"
     networks:
       - internal
       - edge
     restart: unless-stopped
 
+  netbird-signal:
+    image: netbirdio/signal:0.64.5
+    command:
+      - --port
+      - "10000"
+      - --log-file
+      - console
+      - --log-level
+      - info
+    networks:
+      - internal
+    restart: unless-stopped
+
   netbird-dashboard:
-    image: netbirdio/dashboard:v0.36.7
+    image: netbirdio/dashboard:v2.31.0
     environment:
       NETBIRD_MGMT_API_ENDPOINT: https://${NB_DOMAIN}
     labels:
@@ -89,21 +122,25 @@ services:
       - traefik.http.services.netbird-ui.loadbalancer.server.port=80
     depends_on:
       - netbird
+    extra_hosts:
+      - "${NB_DOMAIN}:host-gateway"
+      - "${NB_UI_DOMAIN}:host-gateway"
     networks:
       - internal
       - edge
     restart: unless-stopped
 
   midpoint:
-    image: evolveum/midpoint:4.9
+    image: evolveum/midpoint:latest
     environment:
-      REPO_DATABASE_TYPE: postgresql
-      REPO_JDBC_URL: jdbc:postgresql://postgres:5432/midpoint
-      REPO_JDBC_USERNAME: midpoint
-      REPO_JDBC_PASSWORD: ${MP_DB_PASSWORD}
-      MIDPOINT_NODE_ID: node1
+      MP_SET_midpoint_repository_database: postgresql
+      MP_SET_midpoint_repository_jdbcUrl: jdbc:postgresql://postgres:5432/midpoint
+      MP_SET_midpoint_repository_jdbcUsername: midpoint
+      MP_SET_midpoint_repository_jdbcPassword: ${MP_DB_PASSWORD}
+      MP_SET_midpoint_nodeId: node1
     volumes:
       - mp_home:/opt/midpoint/var
+      - ./midpoint/config.xml:/opt/midpoint/var/config.xml:ro
     labels:
       - traefik.enable=true
       - traefik.http.routers.midpoint.rule=Host(`${MP_HOSTNAME}`)
@@ -117,6 +154,90 @@ services:
       - edge
     restart: unless-stopped
 
+  scim-bridge:
+    build:
+      context: ./scim-bridge
+    profiles: ["demo"]
+    environment:
+      PORT: 8080
+      SCIM_BRIDGE_TOKEN: ${SCIM_BRIDGE_TOKEN}
+      KC_HOSTNAME: ${KC_HOSTNAME}
+      KC_INTERNAL_URL: http://keycloak:8080
+      KC_REALM: ${KC_REALM}
+      KC_ADMIN: ${KC_ADMIN}
+      KC_ADMIN_PASSWORD: ${KC_ADMIN_PASSWORD}
+      NB_DEMO_GROUP: ${NB_DEMO_GROUP}
+    depends_on:
+      - keycloak
+    networks:
+      - internal
+    restart: unless-stopped
+
+  nb-router:
+    image: netbirdio/netbird:0.64.5
+    entrypoint: ["/bin/sh", "-lc"]
+    command: ["sleep infinity"]
+    profiles: ["demo"]
+    cap_add:
+      - NET_ADMIN
+      - SYS_ADMIN
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    volumes:
+      - nb_router_data:/var/lib/netbird
+      - ./traefik/certs/localtest.pem:/etc/ssl/certs/localtest-local-ca.pem:ro
+    environment:
+      SSL_CERT_FILE: /etc/ssl/certs/localtest-local-ca.pem
+    depends_on:
+      - netbird
+    extra_hosts:
+      - "${KC_HOSTNAME}:host-gateway"
+      - "${NB_DOMAIN}:host-gateway"
+      - "${NB_UI_DOMAIN}:host-gateway"
+      - "host.docker.internal:host-gateway"
+    networks:
+      - internal
+      - edge
+    restart: unless-stopped
+
+  internal-app:
+    image: hashicorp/http-echo:1.0.0
+    command:
+      - -listen=:8080
+      - -text=hello internal world
+    profiles: ["demo"]
+    depends_on:
+      - nb-router
+    network_mode: service:nb-router
+    restart: unless-stopped
+
+  demo-client:
+    image: netbirdio/netbird:0.64.5
+    entrypoint: ["/bin/sh", "-lc"]
+    command: ["sleep infinity"]
+    profiles: ["demo"]
+    cap_add:
+      - NET_ADMIN
+      - SYS_ADMIN
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    volumes:
+      - nb_client_data:/var/lib/netbird
+      - ./traefik/certs/localtest.pem:/etc/ssl/certs/localtest-local-ca.pem:ro
+    environment:
+      SSL_CERT_FILE: /etc/ssl/certs/localtest-local-ca.pem
+    depends_on:
+      - netbird
+    extra_hosts:
+      - "${KC_HOSTNAME}:host-gateway"
+      - "${NB_DOMAIN}:host-gateway"
+      - "${NB_UI_DOMAIN}:host-gateway"
+      - "host.docker.internal:host-gateway"
+    networks:
+      - internal
+      - edge
+    restart: unless-stopped
+
 networks:
   edge:
   internal:
@@ -125,4 +246,7 @@ networks:
 volumes:
   pg_data:
   mp_home:
+  nb_data:
+  nb_router_data:
+  nb_client_data:
   traefik_letsencrypt:

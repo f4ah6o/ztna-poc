@@ -1,0 +1,13 @@
+{
+  "name": "scim-bridge",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Minimal SCIM bridge for demo provisioning to Keycloak",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js"
+  },
+  "dependencies": {
+    "express": "4.21.2"
+  }
+}
