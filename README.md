@@ -32,11 +32,11 @@ source ~/.bashrc
 ## クイックスタート
 
 ```bash
-cp .env.example .env
-$EDITOR .env
 just check-tools
 just up
 ```
+
+`.env` が無い場合は、`just up` / `just demo` 実行時にローカルデモ用デフォルト値で自動生成されます。
 
 停止:
 

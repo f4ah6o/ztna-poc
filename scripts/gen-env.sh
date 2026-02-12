@@ -9,8 +9,32 @@ NETBIRD_CONFIG_DIR="${ROOT_DIR}/netbird"
 NETBIRD_CONFIG_FILE="${NETBIRD_CONFIG_DIR}/management.json"
 
 if [[ ! -f "${ENV_FILE}" ]]; then
-  cp "${ROOT_DIR}/.env.example" "${ENV_FILE}"
-  echo "[gen-env] Created .env from .env.example. Update secrets before running production workloads."
+  cat > "${ENV_FILE}" <<'EOF'
+POSTGRES_SUPERPASS=dev-super-pass
+KC_HOSTNAME=keycloak.localtest.me
+NB_DOMAIN=netbird.localtest.me
+NB_UI_DOMAIN=netbird-ui.localtest.me
+MP_HOSTNAME=midpoint.localtest.me
+KC_ADMIN=admin
+KC_ADMIN_PASSWORD=dev-admin-pass
+KC_REALM=master
+KC_DB_PASSWORD=dev-kcdb-pass
+NB_OIDC_CLIENT_ID=netbird
+NB_OIDC_CLIENT_SECRET=dev-oidc-secret
+NB_DB_PASSWORD=dev-nbdb-pass
+MP_DB_PASSWORD=dev-mpdb-pass
+NB_DEMO_GROUP=demo-users
+SCIM_BRIDGE_TOKEN=dev-scim-bridge-token
+DEMO_USERNAME=demo-user
+DEMO_EMAIL=demo-user@localtest.me
+DEMO_PASSWORD=dev-demo-password
+NB_ROUTER_SETUP_KEY=
+NB_OIDC_AUDIENCE=account
+NB_ACCOUNT_DOMAIN=localtest.me
+NB_RELAY_SECRET=dev-relay-secret
+NB_DATASTORE_ENCRYPTION_KEY=MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=
+EOF
+  echo "[gen-env] Created .env with local demo defaults."
 fi
 
 bash "${ROOT_DIR}/scripts/gen-certs.sh"
