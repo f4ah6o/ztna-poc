@@ -65,6 +65,7 @@ just demo-dns01-fresh
 just netsim-up
 just netsim-create
 just netsim-status
+just netsim-verify
 just netsim-preset degraded
 just netsim-link gateway veth-gw-saas down
 just netsim-link gateway veth-gw-saas up
@@ -190,6 +191,12 @@ just netsim-preset degraded
 just netsim-link gateway veth-gw-saas down
 # 復旧
 just netsim-link gateway veth-gw-saas up
+```
+
+疎通と障害注入をまとめて検証する場合:
+
+```bash
+just netsim-verify
 ```
 
 クリーンアップ:

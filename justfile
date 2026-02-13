@@ -62,6 +62,9 @@ netsim-destroy:
 netsim-status:
   bash scripts/netsim/run.sh status
 
+netsim-verify:
+  bash scripts/netsim/verify.sh
+
 netsim-fault ns="gateway" iface="veth-gw-saas" delay_ms="200" loss_pct="10":
   bash scripts/netsim/run.sh apply-fault --ns "{{ns}}" --if "{{iface}}" --delay-ms "{{delay_ms}}" --loss-pct "{{loss_pct}}"
 
