@@ -6,7 +6,7 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/common.sh"
 require_cmd bash
 require_cmd curl
 require_cmd jq
-require_cmd timeout
+require_timeout
 
 bash "${ROOT_DIR}/scripts/gen-env.sh"
 
@@ -106,7 +106,7 @@ done
 
 log "Logging exitnode-gw into NetBird"
 if ! run_with_heartbeat "Waiting exitnode-gw registration" \
-  timeout 120 bash "${ROOT_DIR}/scripts/compose.sh" --profile exitnode exec -T exitnode-gw /usr/local/bin/netbird up \
+  run_with_timeout 120 bash "${ROOT_DIR}/scripts/compose.sh" --profile exitnode exec -T exitnode-gw /usr/local/bin/netbird up \
   --management-url "http://netbird:80" \
   --admin-url "https://${NB_UI_DOMAIN}" \
   --hostname nb-exitnode \

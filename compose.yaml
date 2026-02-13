@@ -26,6 +26,9 @@ services:
     volumes:
       - pg_data:/var/lib/postgresql/data
       - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
+      - ./midpoint/sql/native/postgres.sql:/docker-entrypoint-initdb.d/midpoint-postgres.sql:ro
+      - ./midpoint/sql/native/postgres-audit.sql:/docker-entrypoint-initdb.d/midpoint-postgres-audit.sql:ro
+      - ./midpoint/sql/native/postgres-quartz.sql:/docker-entrypoint-initdb.d/midpoint-postgres-quartz.sql:ro
     networks:
       - internal
     restart: unless-stopped
@@ -131,12 +134,14 @@ services:
     restart: unless-stopped
 
   midpoint:
-    image: evolveum/midpoint:latest
+    image: evolveum/midpoint:4.9
     environment:
+      JAVA_TOOL_OPTIONS: -Xms${MP_JAVA_XMS:-256m} -Xmx${MP_JAVA_XMX:-768m} -XX:+UseSerialGC
       MP_SET_midpoint_repository_database: postgresql
       MP_SET_midpoint_repository_jdbcUrl: jdbc:postgresql://postgres:5432/midpoint
       MP_SET_midpoint_repository_jdbcUsername: midpoint
       MP_SET_midpoint_repository_jdbcPassword: ${MP_DB_PASSWORD}
+      MP_SET_midpoint_repository_hibernateHbm2ddl: ${MP_REPO_HBM2DDL:-update}
       MP_SET_midpoint_repository_missingSchemaAction: create
       MP_SET_midpoint_repository_upgradeableSchemaAction: upgrade
       MP_SET_midpoint_nodeId: node1

@@ -25,6 +25,9 @@ NB_OIDC_CLIENT_SECRET=dev-oidc-secret
 NB_DB_PASSWORD=dev-nbdb-pass
 MP_DB_PASSWORD=dev-mpdb-pass
 MP_ADMIN_PASSWORD=dev-midpoint-admin-pass
+MP_JAVA_XMS=256m
+MP_JAVA_XMX=768m
+MP_REPO_HBM2DDL=update
 NB_DEMO_GROUP=demo-users
 SCIM_BRIDGE_TOKEN=dev-scim-bridge-token
 DEMO_USERNAME=demo-user
@@ -98,6 +101,9 @@ done
 : "${SCAS_MEMCACHED_HOST:=memcached:11211}"
 : "${EXITNODE_PROFILE_ENABLED:=true}"
 : "${MP_ADMIN_PASSWORD:=dev-midpoint-admin-pass}"
+: "${MP_JAVA_XMS:=256m}"
+: "${MP_JAVA_XMX:=768m}"
+: "${MP_REPO_HBM2DDL:=update}"
 
 append_env_default_if_missing "NB_DEMO_GROUP" "${NB_DEMO_GROUP}"
 append_env_default_if_missing "SQUID_HOSTNAME" "${SQUID_HOSTNAME}"
@@ -112,6 +118,9 @@ append_env_default_if_missing "SCAS_MEMCACHED_HOST" "${SCAS_MEMCACHED_HOST}"
 append_env_default_if_missing "EXITNODE_PROFILE_ENABLED" "${EXITNODE_PROFILE_ENABLED}"
 append_env_default_if_missing "NB_OIDC_AUDIENCE" "${NB_OIDC_AUDIENCE}"
 append_env_default_if_missing "MP_ADMIN_PASSWORD" "${MP_ADMIN_PASSWORD}"
+append_env_default_if_missing "MP_JAVA_XMS" "${MP_JAVA_XMS}"
+append_env_default_if_missing "MP_JAVA_XMX" "${MP_JAVA_XMX}"
+append_env_default_if_missing "MP_REPO_HBM2DDL" "${MP_REPO_HBM2DDL}"
 
 sql_escape() {
   printf "%s" "$1" | sed "s/'/''/g"

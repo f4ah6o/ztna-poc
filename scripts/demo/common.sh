@@ -44,6 +44,39 @@ require_cmd() {
   }
 }
 
+require_timeout() {
+  if command -v timeout >/dev/null 2>&1; then
+    return 0
+  fi
+  if command -v gtimeout >/dev/null 2>&1; then
+    return 0
+  fi
+  if command -v perl >/dev/null 2>&1; then
+    return 0
+  fi
+
+  echo "missing command: timeout (or gtimeout/perl fallback)" >&2
+  exit 1
+}
+
+run_with_timeout() {
+  local seconds="$1"
+  shift
+
+  if command -v timeout >/dev/null 2>&1; then
+    timeout "${seconds}" "$@"
+    return $?
+  fi
+
+  if command -v gtimeout >/dev/null 2>&1; then
+    gtimeout "${seconds}" "$@"
+    return $?
+  fi
+
+  # macOS default shells often miss timeout/gtimeout.
+  perl -e 'alarm shift; exec @ARGV' "${seconds}" "$@"
+}
+
 compose_base_cmd() {
   local cmd
   printf -v cmd 'docker compose -f %q' "${COMPOSE_FILE}"

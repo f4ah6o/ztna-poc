@@ -155,6 +155,7 @@ just demo-exitnode
 
 - `exitnode-bootstrap.sh` 実行時に `sysctl: ... Read-only file system` が出る場合があります（コンテナ制約による警告）。PoC フロー継続には影響しません。
 - 現在の PoC は通信成立を優先し、Squid の ICAP は `bypass=1`（ICAP 異常時はフェイルオープン）で設定しています。厳格運用にする場合は `exitnode/squid/squid.conf` の `bypass` を見直してください。
+- `midpoint` が `OOMKilled (exit 137)` になる場合は `.env` の `MP_JAVA_XMS` / `MP_JAVA_XMX` を下げてください（例: `MP_JAVA_XMS=192m`, `MP_JAVA_XMX=512m`）。
 
 追加ファイル:
 
@@ -213,3 +214,4 @@ just netsim-down
 - 外部公開ポートは Traefik の `80/443` のみです。
 - 内部サービスは Docker `internal` ネットワークに配置されます。
 - 証明書自動化 (Let's Encrypt / 社内 CA) は未設定です。`traefik` 配下設定を差し替えてください。
+- `postgres` 初回初期化時に midPoint native schema (`midpoint/sql/native/*.sql`) を自動適用します。既存 `pg_data` ボリュームには再適用されないため、スキーマ不整合時は `pg_data` を削除して再作成してください。

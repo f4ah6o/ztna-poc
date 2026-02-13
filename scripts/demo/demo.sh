@@ -6,7 +6,7 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/common.sh"
 require_cmd curl
 require_cmd bash
 require_cmd jq
-require_cmd timeout
+require_timeout
 
 bash "${ROOT_DIR}/scripts/gen-env.sh"
 
@@ -114,7 +114,7 @@ done
 log "Logging nb-router into NetBird with setup key"
 up_rc=0
 if ! run_with_heartbeat "Waiting nb-router registration" \
-  timeout 120 bash "${ROOT_DIR}/scripts/compose.sh" --profile demo exec -T nb-router /usr/local/bin/netbird up \
+  run_with_timeout 120 bash "${ROOT_DIR}/scripts/compose.sh" --profile demo exec -T nb-router /usr/local/bin/netbird up \
   --management-url "http://netbird:80" \
   --admin-url "https://${NB_UI_DOMAIN}" \
   --hostname nb-router \
