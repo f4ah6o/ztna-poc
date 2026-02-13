@@ -1,0 +1,56 @@
+groups:
+  - name: ztna-poc-availability
+    rules:
+      - alert: ServiceProbeFailed
+        expr: probe_success{job=~"blackbox-http|blackbox-tcp"} == 0
+        for: 3m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Service probe failed"
+          description: "{{ $labels.instance }} is failing blackbox probe for more than 3 minutes"
+
+  - name: ztna-poc-capacity
+    rules:
+      - alert: HostHighCPU
+        expr: 100 - (avg by (instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 90
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CPU usage"
+          description: "CPU usage above 90% for 15m on {{ $labels.instance }}"
+
+      - alert: HostHighMemory
+        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 90
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High memory usage"
+          description: "Memory usage above 90% for 15m on {{ $labels.instance }}"
+
+      - alert: ContainerRestartsDetected
+        expr: increase(container_start_time_seconds[15m]) > 1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Container restarted"
+          description: "Container {{ $labels.name }} restarted multiple times in the last 15m"
+
+  - name: ztna-poc-scim
+    rules:
+      - alert: ScimBridge5xxRateHigh
+        expr: |
+          (
+            sum(rate(http_requests_total{job="scim-bridge",status=~"5.."}[10m]))
+            /
+            clamp_min(sum(rate(http_requests_total{job="scim-bridge"}[10m])), 1e-9)
+          ) > 0.10
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "SCIM bridge high 5xx rate"
+          description: "SCIM bridge 5xx ratio is above 10% for 10m"

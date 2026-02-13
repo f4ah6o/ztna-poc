@@ -63,6 +63,10 @@ just certs-dns01-check
 just demo-dns01
 just demo-dns01-fresh
 just netsim-up
+just obs-up
+just obs-ps
+just obs-logs
+just obs-down
 just netsim-create
 just netsim-status
 just netsim-verify
@@ -127,6 +131,38 @@ nix run .#down
 - `just demo-logs-once netbird`
 - `just demo-logs-once netbird-signal`
 - NetBird 関連状態を掃除して再試行する場合: `just demo-clean-netbird`
+
+## Observability (Prometheus + Grafana + Loki)
+
+`profile=observability` で、全サービス横断のメトリクス/ログ監視を起動できます。
+
+- `just obs-up`: observability サービス群を起動
+- `just obs-ps`: observability サービス状態を確認
+- `just obs-logs [service]`: observability ログを確認
+- `just obs-down`: observability サービス群を停止
+
+主要アクセス先 (docker host ローカル限定):
+
+- `http://127.0.0.1:3000` (Grafana)
+- `http://127.0.0.1:9090` (Prometheus)
+- `http://127.0.0.1:3100` (Loki API)
+
+Grafana 初期認証情報:
+
+- User: `${GRAFANA_ADMIN_USER}` (default: `admin`)
+- Password: `${GRAFANA_ADMIN_PASSWORD}` (default は `.env` 参照)
+
+同梱ダッシュボード:
+
+- `Platform Overview`
+- `Auth & Access Audit`
+- `SCIM Bridge API`
+- `Exitnode / Squid`
+
+監査向け LogQL 例:
+
+- Keycloak 認証失敗: `{compose_service="keycloak"} |= "invalid_user_credentials"`
+- Squid ブロック記録: `{compose_service="squid"} |= "TCP_DENIED"`
 
 ## Exit Node + SquidSCAS PoC
 

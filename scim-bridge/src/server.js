@@ -1,4 +1,5 @@
 const express = require("express");
+const client = require("prom-client");
 const {
   getAdminToken,
   findUserByUsername,
@@ -20,6 +21,34 @@ const app = express();
 const port = Number(process.env.PORT || 8080);
 const bearerToken = process.env.SCIM_BRIDGE_TOKEN;
 const defaultGroup = process.env.NB_DEMO_GROUP || "demo-users";
+const metricsRegister = new client.Registry();
+
+client.collectDefaultMetrics({
+  register: metricsRegister,
+  prefix: "scim_bridge_",
+});
+
+const httpRequestsTotal = new client.Counter({
+  name: "http_requests_total",
+  help: "Total number of HTTP requests",
+  labelNames: ["method", "route", "status"],
+  registers: [metricsRegister],
+});
+
+const httpRequestDurationSeconds = new client.Histogram({
+  name: "http_request_duration_seconds",
+  help: "HTTP request duration in seconds",
+  labelNames: ["method", "route", "status"],
+  buckets: [0.01, 0.05, 0.1, 0.3, 1, 3, 10],
+  registers: [metricsRegister],
+});
+
+const scimKeycloakRequestFailuresTotal = new client.Counter({
+  name: "scim_keycloak_request_failures_total",
+  help: "Number of SCIM operations that failed due to Keycloak API/token errors",
+  labelNames: ["operation"],
+  registers: [metricsRegister],
+});
 
 if (!bearerToken) {
   throw new Error("SCIM_BRIDGE_TOKEN is required");
@@ -27,8 +56,28 @@ if (!bearerToken) {
 
 app.use(express.json({ limit: "2mb" }));
 
+function normalizedRoute(req) {
+  if (req.route?.path) return req.route.path;
+  if (!req.path) return "unknown";
+  return req.path
+    .replace(/[0-9a-f]{8}-[0-9a-f-]{27,}/gi, ":id")
+    .replace(/\/\d+/g, "/:id");
+}
+
 app.use((req, res, next) => {
-  if (req.path === "/healthz") return next();
+  const end = httpRequestDurationSeconds.startTimer();
+  res.on("finish", () => {
+    const route = normalizedRoute(req);
+    const status = String(res.statusCode);
+    const labels = { method: req.method, route, status };
+    httpRequestsTotal.inc(labels);
+    end(labels);
+  });
+  next();
+});
+
+app.use((req, res, next) => {
+  if (req.path === "/healthz" || req.path === "/metrics") return next();
 
   const auth = req.headers.authorization || "";
   if (!auth.startsWith("Bearer ")) {
@@ -46,6 +95,15 @@ app.use((req, res, next) => {
 app.get("/healthz", (_req, res) => {
   res.json({ status: "ok" });
 });
+
+app.get("/metrics", async (_req, res) => {
+  res.set("Content-Type", metricsRegister.contentType);
+  res.end(await metricsRegister.metrics());
+});
+
+function isKeycloakError(err) {
+  return typeof err?.message === "string" && err.message.startsWith("Keycloak ");
+}
 
 app.post("/scim/v2/Users", async (req, res) => {
   try {
@@ -68,6 +126,9 @@ app.post("/scim/v2/Users", async (req, res) => {
     const finalUser = await findUserById(token, userId);
     res.status(upserted.created ? 201 : 200).json(scimUserResponse(finalUser || model, userId));
   } catch (err) {
+    if (isKeycloakError(err)) {
+      scimKeycloakRequestFailuresTotal.inc({ operation: "create_user" });
+    }
     res.status(400).json({ error: err.message });
   }
 });
@@ -120,6 +181,9 @@ app.patch("/scim/v2/Users/:id", async (req, res) => {
     const finalUser = await findUserById(token, req.params.id);
     res.json(scimUserResponse(finalUser, req.params.id));
   } catch (err) {
+    if (isKeycloakError(err)) {
+      scimKeycloakRequestFailuresTotal.inc({ operation: "patch_user" });
+    }
     res.status(400).json({ error: err.message });
   }
 });
@@ -139,6 +203,9 @@ app.post("/scim/v2/Groups", async (req, res) => {
 
     res.status(201).json(scimGroupResponse(model, group.id));
   } catch (err) {
+    if (isKeycloakError(err)) {
+      scimKeycloakRequestFailuresTotal.inc({ operation: "create_group" });
+    }
     res.status(400).json({ error: err.message });
   }
 });
@@ -166,6 +233,9 @@ app.patch("/scim/v2/Groups/:id", async (req, res) => {
 
     res.json({ schemas: ["urn:ietf:params:scim:schemas:core:2.0:Group"], id: req.params.id });
   } catch (err) {
+    if (isKeycloakError(err)) {
+      scimKeycloakRequestFailuresTotal.inc({ operation: "patch_group" });
+    }
     res.status(400).json({ error: err.message });
   }
 });

@@ -38,6 +38,11 @@ NB_EXITNODE_SETUP_KEY=
 SCAS_REDIR_URL=http://127.0.0.1/scas-error
 SCAS_MEMCACHED_HOST=memcached:11211
 EXITNODE_PROFILE_ENABLED=true
+OBS_PROFILE_ENABLED=true
+PROMETHEUS_RETENTION=7d
+LOKI_RETENTION=7d
+GRAFANA_ADMIN_USER=admin
+GRAFANA_ADMIN_PASSWORD=dev-grafana-admin-pass
 NB_OIDC_AUDIENCE=account
 NB_ACCOUNT_DOMAIN=localtest.me
 NB_RELAY_SECRET=dev-relay-secret
@@ -100,6 +105,11 @@ done
 : "${SCAS_REDIR_URL:=http://127.0.0.1/scas-error}"
 : "${SCAS_MEMCACHED_HOST:=memcached:11211}"
 : "${EXITNODE_PROFILE_ENABLED:=true}"
+: "${OBS_PROFILE_ENABLED:=true}"
+: "${PROMETHEUS_RETENTION:=7d}"
+: "${LOKI_RETENTION:=7d}"
+: "${GRAFANA_ADMIN_USER:=admin}"
+: "${GRAFANA_ADMIN_PASSWORD:=dev-grafana-admin-pass}"
 : "${MP_ADMIN_PASSWORD:=dev-midpoint-admin-pass}"
 : "${MP_JAVA_XMS:=256m}"
 : "${MP_JAVA_XMX:=768m}"
@@ -116,6 +126,11 @@ append_env_default_if_missing "NB_EXITNODE_SETUP_KEY" "${NB_EXITNODE_SETUP_KEY}"
 append_env_default_if_missing "SCAS_REDIR_URL" "${SCAS_REDIR_URL}"
 append_env_default_if_missing "SCAS_MEMCACHED_HOST" "${SCAS_MEMCACHED_HOST}"
 append_env_default_if_missing "EXITNODE_PROFILE_ENABLED" "${EXITNODE_PROFILE_ENABLED}"
+append_env_default_if_missing "OBS_PROFILE_ENABLED" "${OBS_PROFILE_ENABLED}"
+append_env_default_if_missing "PROMETHEUS_RETENTION" "${PROMETHEUS_RETENTION}"
+append_env_default_if_missing "LOKI_RETENTION" "${LOKI_RETENTION}"
+append_env_default_if_missing "GRAFANA_ADMIN_USER" "${GRAFANA_ADMIN_USER}"
+append_env_default_if_missing "GRAFANA_ADMIN_PASSWORD" "${GRAFANA_ADMIN_PASSWORD}"
 append_env_default_if_missing "NB_OIDC_AUDIENCE" "${NB_OIDC_AUDIENCE}"
 append_env_default_if_missing "MP_ADMIN_PASSWORD" "${MP_ADMIN_PASSWORD}"
 append_env_default_if_missing "MP_JAVA_XMS" "${MP_JAVA_XMS}"

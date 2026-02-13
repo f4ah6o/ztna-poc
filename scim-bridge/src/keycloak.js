@@ -19,11 +19,16 @@ async function getAdminToken() {
     password: adminPassword,
   });
 
-  const res = await fetch(tokenUrl, {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body,
-  });
+  let res;
+  try {
+    res = await fetch(tokenUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body,
+    });
+  } catch (err) {
+    throw new Error(`Keycloak token request failed: ${err.message}`);
+  }
 
   if (!res.ok) {
     const text = await res.text();
@@ -35,14 +40,19 @@ async function getAdminToken() {
 }
 
 async function kcRequest(path, { method = "GET", token, body } = {}) {
-  const res = await fetch(`${adminBase}${path}`, {
-    method,
-    headers: {
-      Authorization: `Bearer ${token}`,
-      ...(body ? { "Content-Type": "application/json" } : {}),
-    },
-    body: body ? JSON.stringify(body) : undefined,
-  });
+  let res;
+  try {
+    res = await fetch(`${adminBase}${path}`, {
+      method,
+      headers: {
+        Authorization: `Bearer ${token}`,
+        ...(body ? { "Content-Type": "application/json" } : {}),
+      },
+      body: body ? JSON.stringify(body) : undefined,
+    });
+  } catch (err) {
+    throw new Error(`Keycloak API request failed ${method} ${path}: ${err.message}`);
+  }
 
   if (!res.ok && res.status !== 404) {
     const text = await res.text();

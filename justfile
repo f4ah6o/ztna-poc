@@ -53,6 +53,23 @@ netsim-up: init-env
 netsim-down:
   bash scripts/compose.sh --profile netsim rm -sf netsim || true
 
+obs-up: init-env
+  bash scripts/compose.sh --profile observability up -d prometheus loki promtail grafana node-exporter cadvisor blackbox-exporter
+  bash scripts/compose.sh --profile observability ps
+
+obs-down:
+  bash scripts/compose.sh --profile observability down
+
+obs-ps:
+  bash scripts/compose.sh --profile observability ps
+
+obs-logs service="":
+  if [ -n "{{service}}" ]; then \
+    bash scripts/compose.sh --profile observability logs -f --tail=100 "{{service}}"; \
+  else \
+    bash scripts/compose.sh --profile observability logs -f --tail=100; \
+  fi
+
 netsim-create:
   bash scripts/netsim/run.sh create
 

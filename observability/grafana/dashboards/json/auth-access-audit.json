@@ -1,0 +1,68 @@
+{
+  "id": null,
+  "uid": "ztna-auth-access-audit",
+  "title": "Auth & Access Audit",
+  "timezone": "browser",
+  "schemaVersion": 38,
+  "version": 1,
+  "refresh": "30s",
+  "tags": ["ztna", "audit"],
+  "time": {
+    "from": "now-24h",
+    "to": "now"
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "Keycloak Error Logs",
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 0},
+      "datasource": {"type": "loki", "uid": "loki"},
+      "targets": [
+        {
+          "expr": "sum(count_over_time({compose_service=\"keycloak\"} |= \"ERROR\" [5m]))",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "Squid Deny Events",
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 8},
+      "datasource": {"type": "loki", "uid": "loki"},
+      "targets": [
+        {
+          "expr": "sum(count_over_time({compose_service=\"squid\"} |= \"TCP_DENIED\" [5m]))",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "logs",
+      "title": "Recent Keycloak Auth Failures",
+      "gridPos": {"h": 10, "w": 12, "x": 0, "y": 16},
+      "datasource": {"type": "loki", "uid": "loki"},
+      "targets": [
+        {
+          "expr": "{compose_service=\"keycloak\"} |= \"invalid_user_credentials\"",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "type": "logs",
+      "title": "Recent Squid Deny Logs",
+      "gridPos": {"h": 10, "w": 12, "x": 12, "y": 16},
+      "datasource": {"type": "loki", "uid": "loki"},
+      "targets": [
+        {
+          "expr": "{compose_service=\"squid\"} |= \"TCP_DENIED\"",
+          "refId": "A"
+        }
+      ]
+    }
+  ]
+}
