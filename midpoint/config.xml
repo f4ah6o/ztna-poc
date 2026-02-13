@@ -16,9 +16,6 @@
       <auditService>
         <auditServiceFactoryClass>com.evolveum.midpoint.audit.impl.LoggerAuditServiceFactory</auditServiceFactoryClass>
       </auditService>
-      <auditService>
-        <auditServiceFactoryClass>com.evolveum.midpoint.repo.sqale.audit.SqaleAuditServiceFactory</auditServiceFactoryClass>
-      </auditService>
     </audit>
 
     <icf>

@@ -57,7 +57,20 @@ just ps
 just logs
 just logs keycloak
 just demo-clean-netbird
+just certs-dns01-import
+just certs-dns01-apply
+just certs-dns01-check
+just demo-dns01
+just demo-dns01-fresh
 ```
+
+`dns01` の証明書 (`../dns01-poc/out.pem`) を使う場合:
+
+- `just certs-dns01-import` で `traefik/certs/localtest.pem` / `localtest-key.pem` に取り込み
+- `just certs-dns01-apply` で取り込み後に `traefik` を再作成して証明書反映
+- `just demo-dns01` で証明書取り込み後に demo 実行
+- `just demo-dns01-fresh` で NetBird 関連クリーン + 証明書取り込み + demo 実行
+- 取り込み元を変える場合: `DNS01_CERT_BUNDLE_PATH=/path/to/out.pem just certs-dns01-import`
 
 ## 任意: Nix コマンド
 
@@ -76,12 +89,12 @@ nix run .#down
 - `NB_UI_DOMAIN`
 - `MP_HOSTNAME`
 
-`.env` の既定値を使う場合のアクセス先:
+`.env` の設定値を使ったアクセス先:
 
-- `https://keycloak.localtest.me` (Keycloak)
-- `https://netbird.localtest.me` (NetBird Management API)
-- `https://netbird-ui.localtest.me` (NetBird Dashboard / SSO)
-- `https://midpoint.localtest.me` (midPoint)
+- `https://${KC_HOSTNAME}` (Keycloak)
+- `https://${NB_DOMAIN}` (NetBird Management API)
+- `https://${NB_UI_DOMAIN}` (NetBird Dashboard / SSO)
+- `https://${MP_HOSTNAME}` (midPoint)
 
 `just demo` 実行後の最終確認:
 

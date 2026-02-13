@@ -13,6 +13,18 @@ check-tools:
 init-env:
   bash scripts/gen-env.sh
 
+certs-dns01-import:
+  bash scripts/certs/import-dns01-cert.sh
+
+certs-dns01-apply: certs-dns01-import
+  bash scripts/compose.sh up -d --force-recreate traefik
+
+certs-dns01-check:
+  openssl x509 -in traefik/certs/localtest.pem -noout -subject -issuer -dates -ext subjectAltName
+  KC_SNI="keycloak.example.com"; if [ -f .env ]; then set -a; source .env; set +a; KC_SNI="${KC_HOSTNAME:-$KC_SNI}"; fi; echo "--- presented cert by traefik (127.0.0.1:443, SNI ${KC_SNI})"; openssl s_client -servername "${KC_SNI}" -connect 127.0.0.1:443 -showcerts </dev/null 2>/dev/null \
+    | awk '/-----BEGIN CERTIFICATE-----/{flag=1} flag{print} /-----END CERTIFICATE-----/{exit}' \
+    | openssl x509 -noout -subject -issuer -ext subjectAltName
+
 config: init-env
   bash scripts/compose.sh config
 
@@ -23,12 +35,19 @@ up: init-env
 demo: init-env
   bash scripts/demo/demo.sh
 
+demo-dns01: certs-dns01-apply demo
+
+demo-dns01-fresh: demo-clean-netbird certs-dns01-apply demo
+
 demo-prereq: init-env
   bash scripts/compose.sh up -d
   bash scripts/compose.sh --profile demo up -d scim-bridge nb-router internal-app
 
 demo-reset:
   bash scripts/compose.sh --profile demo rm -sfv demo-client internal-app nb-router scim-bridge || true
+
+midpoint-reset-admin:
+  bash scripts/demo/midpoint-reset-admin.sh
 
 demo-clean-netbird:
   bash scripts/demo/clean-netbird-volumes.sh

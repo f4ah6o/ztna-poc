@@ -219,7 +219,7 @@ bash "${ROOT_DIR}/scripts/demo/verify-hello.sh"
 
 log "Login info:"
 log "Keycloak: https://${KC_HOSTNAME} (username: ${KC_ADMIN}, password: ${KC_ADMIN_PASSWORD})"
-log "midPoint: https://${MP_HOSTNAME} (admin password is shown in midpoint container startup logs on first run)"
+log "midPoint: https://${MP_HOSTNAME} (username: administrator, password: ${MP_ADMIN_PASSWORD:-<unset>})"
 log "Demo clean:"
 log "just demo-clean-netbird  # remove NetBird demo containers/volumes"
 log "just demo-reset          # remove only demo profile containers"

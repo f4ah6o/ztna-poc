@@ -137,7 +137,10 @@ services:
       MP_SET_midpoint_repository_jdbcUrl: jdbc:postgresql://postgres:5432/midpoint
       MP_SET_midpoint_repository_jdbcUsername: midpoint
       MP_SET_midpoint_repository_jdbcPassword: ${MP_DB_PASSWORD}
+      MP_SET_midpoint_repository_missingSchemaAction: create
+      MP_SET_midpoint_repository_upgradeableSchemaAction: upgrade
       MP_SET_midpoint_nodeId: node1
+      MP_SET_midpoint_administrator_initialPassword: ${MP_ADMIN_PASSWORD}
     volumes:
       - mp_home:/opt/midpoint/var
       - ./midpoint/config.xml:/opt/midpoint/var/config.xml:ro

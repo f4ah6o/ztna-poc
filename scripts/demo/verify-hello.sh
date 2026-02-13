@@ -12,11 +12,22 @@ if [[ -z "${router_ip}" ]]; then
 fi
 
 log "Trying internal page via NetBird peer address: ${router_ip}:8080"
-page="$(dc --profile demo exec -T demo-client sh -lc "wget -qO- --timeout=10 http://${router_ip}:8080 || true")"
+page=""
+for i in $(seq 1 30); do
+  page="$(dc --profile demo exec -T demo-client sh -lc "wget -qO- --timeout=5 http://${router_ip}:8080 || true")"
+  if [[ "${page}" == *"hello internal world"* ]]; then
+    break
+  fi
+  if (( i % 5 == 0 )); then
+    log "Waiting internal page over NetBird... retry ${i}/30"
+  fi
+  sleep 2
+done
 
 if [[ "${page}" != *"hello internal world"* ]]; then
   echo "internal page verification failed" >&2
   echo "response: ${page}" >&2
+  dc --profile demo exec -T demo-client sh -lc 'netbird status --json 2>/dev/null | head -c 3000 || true' >&2 || true
   exit 1
 fi
 

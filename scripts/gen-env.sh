@@ -23,6 +23,7 @@ NB_OIDC_CLIENT_ID=netbird
 NB_OIDC_CLIENT_SECRET=dev-oidc-secret
 NB_DB_PASSWORD=dev-nbdb-pass
 MP_DB_PASSWORD=dev-mpdb-pass
+MP_ADMIN_PASSWORD=dev-midpoint-admin-pass
 NB_DEMO_GROUP=demo-users
 SCIM_BRIDGE_TOKEN=dev-scim-bridge-token
 DEMO_USERNAME=demo-user
@@ -86,6 +87,7 @@ done
 : "${DEMO_EMAIL:=demo-user@${NB_ACCOUNT_DOMAIN}}"
 : "${DEMO_PASSWORD:=dev-demo-password}"
 : "${NB_ROUTER_SETUP_KEY:=}"
+: "${MP_ADMIN_PASSWORD:=dev-midpoint-admin-pass}"
 
 append_env_default_if_missing "NB_DEMO_GROUP" "${NB_DEMO_GROUP}"
 append_env_default_if_missing "SCIM_BRIDGE_TOKEN" "${SCIM_BRIDGE_TOKEN}"
@@ -94,6 +96,7 @@ append_env_default_if_missing "DEMO_EMAIL" "${DEMO_EMAIL}"
 append_env_default_if_missing "DEMO_PASSWORD" "${DEMO_PASSWORD}"
 append_env_default_if_missing "NB_ROUTER_SETUP_KEY" "${NB_ROUTER_SETUP_KEY}"
 append_env_default_if_missing "NB_OIDC_AUDIENCE" "${NB_OIDC_AUDIENCE}"
+append_env_default_if_missing "MP_ADMIN_PASSWORD" "${MP_ADMIN_PASSWORD}"
 
 sql_escape() {
   printf "%s" "$1" | sed "s/'/''/g"
