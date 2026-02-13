@@ -46,6 +46,35 @@ demo-prereq: init-env
 demo-reset:
   bash scripts/compose.sh --profile demo rm -sfv demo-client internal-app nb-router scim-bridge || true
 
+netsim-up: init-env
+  bash scripts/compose.sh --profile netsim up -d --build netsim
+  bash scripts/compose.sh --profile netsim ps
+
+netsim-down:
+  bash scripts/compose.sh --profile netsim rm -sf netsim || true
+
+netsim-create:
+  bash scripts/netsim/run.sh create
+
+netsim-destroy:
+  bash scripts/netsim/run.sh destroy
+
+netsim-status:
+  bash scripts/netsim/run.sh status
+
+netsim-fault ns="gateway" iface="veth-gw-saas" delay_ms="200" loss_pct="10":
+  bash scripts/netsim/run.sh apply-fault --ns "{{ns}}" --if "{{iface}}" --delay-ms "{{delay_ms}}" --loss-pct "{{loss_pct}}"
+
+netsim-link ns="gateway" iface="veth-gw-saas" state="down":
+  bash scripts/netsim/run.sh link --ns "{{ns}}" --if "{{iface}}" --state "{{state}}"
+
+netsim-preset name="degraded":
+  bash scripts/netsim/run.sh apply-preset --name "{{name}}"
+
+netsim-reset:
+  bash scripts/netsim/run.sh destroy || true
+  bash scripts/netsim/run.sh create
+
 exitnode-up: init-env
   bash scripts/compose.sh --profile exitnode up -d memcached squidscas exitnode-gw squid
   bash scripts/compose.sh --profile exitnode ps

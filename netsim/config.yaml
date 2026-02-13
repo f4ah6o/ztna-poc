@@ -1,0 +1,25 @@
+topology:
+  namespaces:
+    client:
+      ifname: veth-client
+      ip_cidr: 10.77.0.2/24
+      gateway: 10.77.0.1
+    gateway:
+      ifname_client: veth-gw-client
+      ip_client_cidr: 10.77.0.1/24
+      ifname_saas: veth-gw-saas
+      ip_saas_cidr: 10.88.0.1/24
+    saas:
+      ifname: veth-saas
+      ip_cidr: 10.88.0.2/24
+      gateway: 10.88.0.1
+
+fault_presets:
+  normal:
+    delay_ms: 0
+    loss_pct: 0
+  degraded:
+    delay_ms: 200
+    loss_pct: 10
+  outage:
+    link_state: down

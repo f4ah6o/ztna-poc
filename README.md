@@ -62,6 +62,14 @@ just certs-dns01-apply
 just certs-dns01-check
 just demo-dns01
 just demo-dns01-fresh
+just netsim-up
+just netsim-create
+just netsim-status
+just netsim-preset degraded
+just netsim-link gateway veth-gw-saas down
+just netsim-link gateway veth-gw-saas up
+just netsim-destroy
+just netsim-down
 just exitnode-up
 just exitnode-down
 just demo-exitnode
@@ -155,6 +163,43 @@ just demo-exitnode
 - `scripts/demo/exitnode-bootstrap.sh`
 - `scripts/demo/verify-squid-path.sh`
 - `scripts/demo/verify-saas-block.sh`
+
+## pyroute2 NetSim PoC
+
+`profile=netsim` で、`pyroute2` を使った仮想ネットワークシミュレータを実行できます。
+
+- `client`, `gateway`, `saas` の3つのnetwork namespaceを作成
+- `veth` 接続 + route + gateway NAT(MASQUERADE) を構成
+- 障害注入: `tc netem`（遅延/ロス）と link down/up（断線）
+
+最短実行手順:
+
+```bash
+just netsim-up
+just netsim-create
+just netsim-status
+```
+
+障害注入例:
+
+```bash
+# プリセット適用 (delay 200ms, loss 10%)
+just netsim-preset degraded
+
+# 断線
+just netsim-link gateway veth-gw-saas down
+# 復旧
+just netsim-link gateway veth-gw-saas up
+```
+
+クリーンアップ:
+
+```bash
+just netsim-destroy
+just netsim-down
+```
+
+プリセット定義は `netsim/config.yaml` で変更できます。
 
 ## 補足
 

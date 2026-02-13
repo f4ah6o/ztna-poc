@@ -2,3 +2,5 @@
 scripts/init-db.sql
 netbird/management.json
 traefik/certs/*.pem
+__pycache__/
+*.pyc

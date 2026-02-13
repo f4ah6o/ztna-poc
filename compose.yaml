@@ -306,6 +306,21 @@ services:
       - squidscas_logs:/var/log/c-icap
     restart: unless-stopped
 
+  netsim:
+    build:
+      context: ./netsim
+    profiles: ["netsim"]
+    privileged: true
+    cap_add:
+      - NET_ADMIN
+      - SYS_ADMIN
+    command: ["sleep", "infinity"]
+    volumes:
+      - ./netsim/config.yaml:/app/config.yaml:ro
+    networks:
+      - internal
+    restart: unless-stopped
+
 networks:
   edge:
   internal:
