@@ -46,6 +46,25 @@ demo-prereq: init-env
 demo-reset:
   bash scripts/compose.sh --profile demo rm -sfv demo-client internal-app nb-router scim-bridge || true
 
+exitnode-up: init-env
+  bash scripts/compose.sh --profile exitnode up -d memcached squidscas exitnode-gw squid
+  bash scripts/compose.sh --profile exitnode ps
+
+exitnode-down:
+  bash scripts/compose.sh --profile exitnode down
+
+demo-exitnode: init-env
+  bash scripts/demo/demo-exitnode.sh
+
+demo-verify-squid:
+  bash scripts/demo/verify-squid-path.sh
+
+demo-verify-block:
+  bash scripts/demo/verify-saas-block.sh
+
+demo-shadow-log lines="50":
+  bash scripts/demo/collect-shadow-log.sh "{{lines}}"
+
 midpoint-reset-admin:
   bash scripts/demo/midpoint-reset-admin.sh
 

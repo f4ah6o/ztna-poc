@@ -1,0 +1,3 @@
+.dropbox.com
+.box.com
+.drive.google.com

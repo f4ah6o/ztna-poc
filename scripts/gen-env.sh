@@ -15,6 +15,7 @@ KC_HOSTNAME=keycloak.localtest.me
 NB_DOMAIN=netbird.localtest.me
 NB_UI_DOMAIN=netbird-ui.localtest.me
 MP_HOSTNAME=midpoint.localtest.me
+SQUID_HOSTNAME=squid-exitnode.localtest.me
 KC_ADMIN=admin
 KC_ADMIN_PASSWORD=dev-admin-pass
 KC_REALM=master
@@ -30,6 +31,10 @@ DEMO_USERNAME=demo-user
 DEMO_EMAIL=demo-user@localtest.me
 DEMO_PASSWORD=dev-demo-password
 NB_ROUTER_SETUP_KEY=
+NB_EXITNODE_SETUP_KEY=
+SCAS_REDIR_URL=http://127.0.0.1/scas-error
+SCAS_MEMCACHED_HOST=memcached:11211
+EXITNODE_PROFILE_ENABLED=true
 NB_OIDC_AUDIENCE=account
 NB_ACCOUNT_DOMAIN=localtest.me
 NB_RELAY_SECRET=dev-relay-secret
@@ -78,6 +83,7 @@ done
 
 # Optional vars for local PoC defaults.
 : "${NB_ACCOUNT_DOMAIN:=localtest.me}"
+: "${SQUID_HOSTNAME:=squid-exitnode.localtest.me}"
 : "${NB_RELAY_SECRET:=dev-relay-secret}"
 : "${NB_DATASTORE_ENCRYPTION_KEY:=MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=}"
 : "${NB_OIDC_AUDIENCE:=account}"
@@ -87,14 +93,23 @@ done
 : "${DEMO_EMAIL:=demo-user@${NB_ACCOUNT_DOMAIN}}"
 : "${DEMO_PASSWORD:=dev-demo-password}"
 : "${NB_ROUTER_SETUP_KEY:=}"
+: "${NB_EXITNODE_SETUP_KEY:=}"
+: "${SCAS_REDIR_URL:=http://127.0.0.1/scas-error}"
+: "${SCAS_MEMCACHED_HOST:=memcached:11211}"
+: "${EXITNODE_PROFILE_ENABLED:=true}"
 : "${MP_ADMIN_PASSWORD:=dev-midpoint-admin-pass}"
 
 append_env_default_if_missing "NB_DEMO_GROUP" "${NB_DEMO_GROUP}"
+append_env_default_if_missing "SQUID_HOSTNAME" "${SQUID_HOSTNAME}"
 append_env_default_if_missing "SCIM_BRIDGE_TOKEN" "${SCIM_BRIDGE_TOKEN}"
 append_env_default_if_missing "DEMO_USERNAME" "${DEMO_USERNAME}"
 append_env_default_if_missing "DEMO_EMAIL" "${DEMO_EMAIL}"
 append_env_default_if_missing "DEMO_PASSWORD" "${DEMO_PASSWORD}"
 append_env_default_if_missing "NB_ROUTER_SETUP_KEY" "${NB_ROUTER_SETUP_KEY}"
+append_env_default_if_missing "NB_EXITNODE_SETUP_KEY" "${NB_EXITNODE_SETUP_KEY}"
+append_env_default_if_missing "SCAS_REDIR_URL" "${SCAS_REDIR_URL}"
+append_env_default_if_missing "SCAS_MEMCACHED_HOST" "${SCAS_MEMCACHED_HOST}"
+append_env_default_if_missing "EXITNODE_PROFILE_ENABLED" "${EXITNODE_PROFILE_ENABLED}"
 append_env_default_if_missing "NB_OIDC_AUDIENCE" "${NB_OIDC_AUDIENCE}"
 append_env_default_if_missing "MP_ADMIN_PASSWORD" "${MP_ADMIN_PASSWORD}"
 

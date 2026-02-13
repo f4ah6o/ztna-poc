@@ -241,6 +241,71 @@ services:
       - edge
     restart: unless-stopped
 
+  exitnode-gw:
+    image: netbirdio/netbird:0.64.5
+    profiles: ["exitnode"]
+    entrypoint: ["/bin/sh", "-lc"]
+    command: ["sleep infinity"]
+    cap_add:
+      - NET_ADMIN
+      - SYS_ADMIN
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    sysctls:
+      net.ipv4.ip_forward: "1"
+    volumes:
+      - nb_exitnode_data:/var/lib/netbird
+      - ./traefik/certs/localtest.pem:/etc/ssl/certs/localtest-local-ca.pem:ro
+    environment:
+      SSL_CERT_FILE: /etc/ssl/certs/localtest-local-ca.pem
+    depends_on:
+      - netbird
+    extra_hosts:
+      - "${KC_HOSTNAME}:host-gateway"
+      - "${NB_DOMAIN}:host-gateway"
+      - "${NB_UI_DOMAIN}:host-gateway"
+      - "host.docker.internal:host-gateway"
+    networks:
+      - internal
+      - edge
+    restart: unless-stopped
+
+  squid:
+    image: ubuntu/squid:latest
+    profiles: ["exitnode"]
+    network_mode: service:exitnode-gw
+    depends_on:
+      - exitnode-gw
+      - squidscas
+    volumes:
+      - ./exitnode/squid/squid.conf:/etc/squid/squid.conf:ro
+      - ./exitnode/squid/blocked_saas.txt:/etc/squid/blocked_saas.txt:ro
+      - squid_logs:/var/log/squid
+    restart: unless-stopped
+
+  memcached:
+    image: memcached:1.6-alpine
+    profiles: ["exitnode"]
+    command: ["memcached", "-m", "64"]
+    networks:
+      - internal
+    restart: unless-stopped
+
+  squidscas:
+    build:
+      context: ./exitnode/squidscas
+    profiles: ["exitnode"]
+    depends_on:
+      - memcached
+    networks:
+      - internal
+    volumes:
+      - ./exitnode/squidscas/conf/c-icap.conf:/usr/local/etc/c-icap.conf:ro
+      - ./exitnode/squidscas/conf/squidscas.conf:/usr/local/etc/squidscas.conf:ro
+      - ./exitnode/squidscas/conf/scas_scan.conf:/usr/local/etc/scas_scan.conf:ro
+      - squidscas_logs:/var/log/c-icap
+    restart: unless-stopped
+
 networks:
   edge:
   internal:
@@ -252,4 +317,7 @@ volumes:
   nb_data:
   nb_router_data:
   nb_client_data:
+  nb_exitnode_data:
+  squid_logs:
+  squidscas_logs:
   traefik_letsencrypt:

@@ -62,6 +62,12 @@ just certs-dns01-apply
 just certs-dns01-check
 just demo-dns01
 just demo-dns01-fresh
+just exitnode-up
+just exitnode-down
+just demo-exitnode
+just demo-verify-squid
+just demo-verify-block
+just demo-shadow-log 100
 ```
 
 `dns01` の証明書 (`../dns01-poc/out.pem`) を使う場合:
@@ -112,6 +118,43 @@ nix run .#down
 - `just demo-logs-once netbird`
 - `just demo-logs-once netbird-signal`
 - NetBird 関連状態を掃除して再試行する場合: `just demo-clean-netbird`
+
+## Exit Node + SquidSCAS PoC
+
+`profile=exitnode` で、NetBird Exit Node コンテナに Squid + SquidSCAS(ICAP) を接続する PoC を実行できます。
+
+- `just exitnode-up`: Exit Node 関連サービスを起動
+- `just demo-exitnode`: 起動 + NetBird 登録 + iptables + プロキシ検証を一括実行
+- `just demo-verify-squid`: 明示プロキシ経由の疎通と `shadow.log` 記録を検証
+- `just demo-verify-block`: `dropbox.com` ブロックを検証
+- `just demo-shadow-log 100`: `shadow.log` を末尾100行確認
+
+最短実行手順:
+
+```bash
+just exitnode-up
+just demo-exitnode
+```
+
+期待される確認ポイント:
+
+- `verify-squid-path` が `Example Domain` 到達を確認
+- `verify-saas-block` が `dropbox.com` 拒否を確認
+- `demo-shadow-log` でアクセス記録が取得できる
+
+既知の注意:
+
+- `exitnode-bootstrap.sh` 実行時に `sysctl: ... Read-only file system` が出る場合があります（コンテナ制約による警告）。PoC フロー継続には影響しません。
+- 現在の PoC は通信成立を優先し、Squid の ICAP は `bypass=1`（ICAP 異常時はフェイルオープン）で設定しています。厳格運用にする場合は `exitnode/squid/squid.conf` の `bypass` を見直してください。
+
+追加ファイル:
+
+- `exitnode/squid/squid.conf`
+- `exitnode/squid/blocked_saas.txt`
+- `exitnode/squidscas/` (Dockerfile, c-icap/squidscas 設定)
+- `scripts/demo/exitnode-bootstrap.sh`
+- `scripts/demo/verify-squid-path.sh`
+- `scripts/demo/verify-saas-block.sh`
 
 ## 補足
 
