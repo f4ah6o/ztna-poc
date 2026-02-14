@@ -60,6 +60,26 @@ obs-up: init-env
 obs-down:
   bash scripts/compose.sh --profile observability down
 
+loadtest-up: init-env
+  bash scripts/compose.sh up -d postgres keycloak
+  bash scripts/compose.sh --profile demo up -d scim-bridge
+  bash scripts/compose.sh --profile observability up -d prometheus node-exporter cadvisor
+
+loadtest-run scenario="scim" profile="ramp" rate="100" duration="5m":
+  bash scripts/loadtest/run.sh scenario="{{scenario}}" profile="{{profile}}" rate="{{rate}}" duration="{{duration}}"
+
+loadtest-analyze run_id:
+  bash scripts/loadtest/analyze.sh run_id="{{run_id}}"
+
+loadtest-scale-test scenario="scim" profile="steady" rate="200" duration="5m":
+  bash scripts/loadtest/scale-test.sh scenario="{{scenario}}" profile="{{profile}}" rate="{{rate}}" duration="{{duration}}"
+
+loadtest-spec run_id:
+  bash scripts/loadtest/spec-recommend.sh run_id="{{run_id}}"
+
+loadtest-report run_id:
+  bash scripts/loadtest/report.sh run_id="{{run_id}}"
+
 obs-ps:
   bash scripts/compose.sh --profile observability ps
 

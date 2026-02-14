@@ -67,6 +67,12 @@ just obs-up
 just obs-ps
 just obs-logs
 just obs-down
+just loadtest-up
+just loadtest-run
+just loadtest-analyze <run_id>
+just loadtest-scale-test
+just loadtest-spec <run_id>
+just loadtest-report <run_id>
 just netsim-create
 just netsim-status
 just netsim-verify
@@ -158,6 +164,25 @@ Grafana 初期認証情報:
 - `Auth & Access Audit`
 - `SCIM Bridge API`
 - `Exitnode / Squid`
+
+## Load Testing & Capacity Planning
+
+`profile=loadtest` で k6 を使った負荷試験を実行し、ボトルネック検出・スケーラビリティ測定・容量提案を行えます。
+
+- `just loadtest-up`: 負荷試験の前提サービスを起動 (`postgres`, `keycloak`, `scim-bridge`, `prometheus`, `node-exporter`, `cadvisor`)
+- `just loadtest-run scenario=scim profile=ramp rate=100 duration=5m`: 負荷試験を実行
+- `just loadtest-analyze <run_id>`: SLO 判定とボトルネック分析 JSON を生成
+- `just loadtest-scale-test`: `scim-bridge` レプリカ数 1/2/3 でスケーラビリティ測定
+- `just loadtest-spec <run_id>`: 想定負荷 (50/100/200 RPS) に対する推奨スペック出力
+- `just loadtest-report <run_id>`: 分析 + 推奨スペックの Markdown レポート出力
+
+成果物:
+
+- `artifacts/loadtest/<run_id>/raw/summary.json` (k6集計)
+- `artifacts/loadtest/<run_id>/raw/prometheus.json` (試験中メトリクス)
+- `artifacts/loadtest/<run_id>/analysis.json` (SLO/ボトルネック判定)
+- `artifacts/loadtest/<run_id>/spec.md` / `spec.json` (容量提案)
+- `artifacts/loadtest/<run_id>/report.md` (最終レポート)
 
 監査向け LogQL 例:
 

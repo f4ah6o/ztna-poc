@@ -181,6 +181,16 @@ services:
       - internal
     restart: unless-stopped
 
+  k6:
+    image: grafana/k6:0.49.0
+    profiles: ["loadtest"]
+    volumes:
+      - ./scripts/loadtest/scenarios:/scripts/loadtest/scenarios:ro
+      - ./artifacts/loadtest:/artifacts/loadtest
+    networks:
+      - internal
+    restart: "no"
+
   nb-router:
     image: netbirdio/netbird:0.64.5
     entrypoint: ["/bin/sh", "-lc"]
