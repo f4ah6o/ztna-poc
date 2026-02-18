@@ -52,7 +52,7 @@ jq -n \
 
   ($a[0]) as $analysis |
   ($analysis.metrics.throughput_rps // 0) as $baseline_throughput |
-  ($analysis.metrics.scim_mem_working_set_peak_bytes // 0) as $mem_bytes |
+  ($analysis.metrics.keycloak_mem_working_set_peak_bytes // 0) as $mem_bytes |
   (
     [ $s.entries[]? | select(.pass == true) | (.throughput_rps / (.replicas|tonumber)) ]
     | if length == 0 then null else max end
@@ -87,7 +87,7 @@ jq -n \
           recommended_memory_gb: (($replicas * $mem_per_replica_gb) * 100 | round / 100),
           assumptions: [
             "70% safe throughput headroom",
-            "1 vCPU per scim-bridge replica",
+            "1 vCPU per keycloak replica",
             "memory is 1.3x observed peak with minimum 0.5GiB/replica"
           ]
         }

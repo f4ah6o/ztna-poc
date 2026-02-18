@@ -1,0 +1,7 @@
+{
+  "egress": {
+    "deny_domains": [
+      "dropbox.com"
+    ]
+  }
+}

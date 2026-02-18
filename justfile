@@ -41,10 +41,10 @@ demo-dns01-fresh: demo-clean-netbird certs-dns01-apply demo
 
 demo-prereq: init-env
   bash scripts/compose.sh up -d
-  bash scripts/compose.sh --profile demo up -d scim-bridge nb-router internal-app
+  bash scripts/compose.sh --profile demo up -d nb-router internal-app
 
 demo-reset:
-  bash scripts/compose.sh --profile demo rm -sfv demo-client internal-app nb-router scim-bridge || true
+  bash scripts/compose.sh --profile demo rm -sfv demo-client internal-app nb-router || true
 
 netsim-up: init-env
   bash scripts/compose.sh --profile netsim up -d --build netsim
@@ -62,16 +62,15 @@ obs-down:
 
 loadtest-up: init-env
   bash scripts/compose.sh up -d postgres keycloak
-  bash scripts/compose.sh --profile demo up -d scim-bridge
   bash scripts/compose.sh --profile observability up -d prometheus node-exporter cadvisor
 
-loadtest-run scenario="scim" profile="ramp" rate="100" duration="5m":
+loadtest-run scenario="keycloak-auth" profile="ramp" rate="100" duration="5m":
   bash scripts/loadtest/run.sh scenario="{{scenario}}" profile="{{profile}}" rate="{{rate}}" duration="{{duration}}"
 
 loadtest-analyze run_id:
   bash scripts/loadtest/analyze.sh run_id="{{run_id}}"
 
-loadtest-scale-test scenario="scim" profile="steady" rate="200" duration="5m":
+loadtest-scale-test scenario="keycloak-auth" profile="steady" rate="200" duration="5m":
   bash scripts/loadtest/scale-test.sh scenario="{{scenario}}" profile="{{profile}}" rate="{{rate}}" duration="{{duration}}"
 
 loadtest-spec run_id:
@@ -133,9 +132,6 @@ demo-verify-block:
 
 demo-shadow-log lines="50":
   bash scripts/demo/collect-shadow-log.sh "{{lines}}"
-
-midpoint-reset-admin:
-  bash scripts/demo/midpoint-reset-admin.sh
 
 demo-clean-netbird:
   bash scripts/demo/clean-netbird-volumes.sh

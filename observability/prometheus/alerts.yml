@@ -38,19 +38,3 @@ groups:
         annotations:
           summary: "Container restarted"
           description: "Container {{ $labels.name }} restarted multiple times in the last 15m"
-
-  - name: ztna-poc-scim
-    rules:
-      - alert: ScimBridge5xxRateHigh
-        expr: |
-          (
-            sum(rate(http_requests_total{job="scim-bridge",status=~"5.."}[10m]))
-            /
-            clamp_min(sum(rate(http_requests_total{job="scim-bridge"}[10m])), 1e-9)
-          ) > 0.10
-        for: 10m
-        labels:
-          severity: warning
-        annotations:
-          summary: "SCIM bridge high 5xx rate"
-          description: "SCIM bridge 5xx ratio is above 10% for 10m"

@@ -1,5 +1,5 @@
 {
-  description = "NetBird + Keycloak + midPoint portable IaC (compose + nix)";
+  description = "NetBird + Keycloak + OPA portable IaC (compose + nix)";
 
   inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.11";
 

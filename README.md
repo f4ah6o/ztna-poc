@@ -1,4 +1,4 @@
-# ZTNA PoC Stack (NetBird + Keycloak + midPoint)
+# ZTNA PoC Stack (NetBird + Keycloak + OPA)
 
 Docker Compose ベースの IaC 雛形です。Ubuntu/WSL2 上での実行を前提に、`just` でタスクを統一しています。
 
@@ -112,14 +112,12 @@ nix run .#down
 - `KC_HOSTNAME`
 - `NB_DOMAIN`
 - `NB_UI_DOMAIN`
-- `MP_HOSTNAME`
 
 `.env` の設定値を使ったアクセス先:
 
 - `https://${KC_HOSTNAME}` (Keycloak)
 - `https://${NB_DOMAIN}` (NetBird Management API)
 - `https://${NB_UI_DOMAIN}` (NetBird Dashboard / SSO)
-- `https://${MP_HOSTNAME}` (midPoint)
 
 `just demo` 実行後の最終確認:
 
@@ -162,17 +160,16 @@ Grafana 初期認証情報:
 
 - `Platform Overview`
 - `Auth & Access Audit`
-- `SCIM Bridge API`
 - `Exitnode / Squid`
 
 ## Load Testing & Capacity Planning
 
 `profile=loadtest` で k6 を使った負荷試験を実行し、ボトルネック検出・スケーラビリティ測定・容量提案を行えます。
 
-- `just loadtest-up`: 負荷試験の前提サービスを起動 (`postgres`, `keycloak`, `scim-bridge`, `prometheus`, `node-exporter`, `cadvisor`)
-- `just loadtest-run scenario=scim profile=ramp rate=100 duration=5m`: 負荷試験を実行
+- `just loadtest-up`: 負荷試験の前提サービスを起動 (`postgres`, `keycloak`, `prometheus`, `node-exporter`, `cadvisor`)
+- `just loadtest-run scenario=keycloak-auth profile=ramp rate=100 duration=5m`: 負荷試験を実行
 - `just loadtest-analyze <run_id>`: SLO 判定とボトルネック分析 JSON を生成
-- `just loadtest-scale-test`: `scim-bridge` レプリカ数 1/2/3 でスケーラビリティ測定
+- `just loadtest-scale-test`: Keycloak 認証シナリオでスケーラビリティ測定
 - `just loadtest-spec <run_id>`: 想定負荷 (50/100/200 RPS) に対する推奨スペック出力
 - `just loadtest-report <run_id>`: 分析 + 推奨スペックの Markdown レポート出力
 
@@ -216,12 +213,13 @@ just demo-exitnode
 
 - `exitnode-bootstrap.sh` 実行時に `sysctl: ... Read-only file system` が出る場合があります（コンテナ制約による警告）。PoC フロー継続には影響しません。
 - 現在の PoC は通信成立を優先し、Squid の ICAP は `bypass=1`（ICAP 異常時はフェイルオープン）で設定しています。厳格運用にする場合は `exitnode/squid/squid.conf` の `bypass` を見直してください。
-- `midpoint` が `OOMKilled (exit 137)` になる場合は `.env` の `MP_JAVA_XMS` / `MP_JAVA_XMX` を下げてください（例: `MP_JAVA_XMS=192m`, `MP_JAVA_XMX=512m`）。
+- `squid` は OPA (`opa:8181`) に external ACL で照会し、判定不能時は拒否（fail-closed）になります。
 
 追加ファイル:
 
 - `exitnode/squid/squid.conf`
-- `exitnode/squid/blocked_saas.txt`
+- `exitnode/squid/opa_acl_helper.sh`
+- `opa/policy/` (Rego + data.json)
 - `exitnode/squidscas/` (Dockerfile, c-icap/squidscas 設定)
 - `scripts/demo/exitnode-bootstrap.sh`
 - `scripts/demo/verify-squid-path.sh`
@@ -275,4 +273,4 @@ just netsim-down
 - 外部公開ポートは Traefik の `80/443` のみです。
 - 内部サービスは Docker `internal` ネットワークに配置されます。
 - 証明書自動化 (Let's Encrypt / 社内 CA) は未設定です。`traefik` 配下設定を差し替えてください。
-- `postgres` 初回初期化時に midPoint native schema (`midpoint/sql/native/*.sql`) を自動適用します。既存 `pg_data` ボリュームには再適用されないため、スキーマ不整合時は `pg_data` を削除して再作成してください。
+- `postgres` 初回初期化時は Keycloak/NetBird DB を作成します。既存 `pg_data` ボリュームには再適用されないため、初期化をやり直す場合は `pg_data` を削除して再作成してください。

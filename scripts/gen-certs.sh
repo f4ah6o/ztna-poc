@@ -18,7 +18,6 @@ fi
 : "${KC_HOSTNAME:=keycloak.${NB_ACCOUNT_DOMAIN}}"
 : "${NB_DOMAIN:=netbird.${NB_ACCOUNT_DOMAIN}}"
 : "${NB_UI_DOMAIN:=netbird-ui.${NB_ACCOUNT_DOMAIN}}"
-: "${MP_HOSTNAME:=midpoint.${NB_ACCOUNT_DOMAIN}}"
 
 mkdir -p "${CERT_DIR}"
 
@@ -28,7 +27,6 @@ required_sans=(
   "${KC_HOSTNAME}"
   "${NB_DOMAIN}"
   "${NB_UI_DOMAIN}"
-  "${MP_HOSTNAME}"
 )
 
 cert_covers_host() {

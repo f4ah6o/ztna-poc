@@ -24,7 +24,7 @@ run_docker_cmd() {
   exit 1
 }
 
-bash "${COMPOSE_SCRIPT}" --profile demo rm -sfv demo-client internal-app nb-router scim-bridge || true
+bash "${COMPOSE_SCRIPT}" --profile demo rm -sfv demo-client internal-app nb-router || true
 bash "${COMPOSE_SCRIPT}" rm -sfv netbird netbird-signal netbird-dashboard || true
 
 project="${COMPOSE_PROJECT_NAME:-$(basename "${ROOT_DIR}")}"

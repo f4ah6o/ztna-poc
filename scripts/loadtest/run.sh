@@ -6,7 +6,7 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib.sh"
 require_cmd jq
 require_cmd curl
 
-SCENARIO="scim"
+SCENARIO="keycloak-auth"
 PROFILE="ramp"
 RATE="100"
 DURATION="5m"
@@ -41,12 +41,14 @@ fi
 
 bash "${ROOT_DIR}/scripts/gen-env.sh" >/dev/null
 
-require_env SCIM_BRIDGE_TOKEN
+require_env KC_REALM
+require_env NB_OIDC_CLIENT_ID
+require_env DEMO_USERNAME
+require_env DEMO_PASSWORD
 
 if [[ "${ENSURE_SERVICES}" == "true" ]]; then
   log "starting services for load test"
   dc up -d postgres keycloak >/dev/null
-  dc --profile demo up -d scim-bridge >/dev/null
   dc --profile observability up -d prometheus node-exporter cadvisor >/dev/null
 fi
 
@@ -68,8 +70,11 @@ START_TS="$(date +%s)"
 
 log "running k6 scenario=${SCENARIO} profile=${PROFILE} rate=${RATE} duration=${DURATION}"
 dc --profile loadtest run --rm \
-  -e SCIM_BASE_URL="http://scim-bridge:8080" \
-  -e SCIM_BEARER_TOKEN="${SCIM_BRIDGE_TOKEN}" \
+  -e KC_BASE_URL="http://keycloak:8080" \
+  -e KC_REALM="${KC_REALM}" \
+  -e KC_CLIENT_ID="${NB_OIDC_CLIENT_ID}" \
+  -e KC_USERNAME="${DEMO_USERNAME}" \
+  -e KC_PASSWORD="${DEMO_PASSWORD}" \
   -e LOAD_PROFILE="${PROFILE}" \
   -e TARGET_RATE="${RATE}" \
   -e TEST_DURATION="${DURATION}" \
@@ -83,13 +88,10 @@ dc --profile loadtest run --rm \
 END_TS="$(date +%s)"
 
 log "collecting prometheus range data"
-q_scim_rps="$(prom_query_range 'sum(rate(http_requests_total{job="scim-bridge"}[1m]))' "${START_TS}" "${END_TS}")"
-q_scim_p95="$(prom_query_range 'histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket{job="scim-bridge"}[1m])))' "${START_TS}" "${END_TS}")"
-q_scim_5xx="$(prom_query_range 'sum(rate(http_requests_total{job="scim-bridge",status=~"5.."}[1m])) / clamp_min(sum(rate(http_requests_total{job="scim-bridge"}[1m])), 1e-9)' "${START_TS}" "${END_TS}")"
-q_scim_cpu="$(prom_query_range 'sum(rate(container_cpu_usage_seconds_total{container_label_com_docker_compose_service="scim-bridge"}[1m]))' "${START_TS}" "${END_TS}")"
-q_scim_mem_bytes="$(prom_query_range 'sum(container_memory_working_set_bytes{container_label_com_docker_compose_service="scim-bridge"})' "${START_TS}" "${END_TS}")"
+q_kc_cpu="$(prom_query_range 'sum(rate(container_cpu_usage_seconds_total{container_label_com_docker_compose_service="keycloak"}[1m]))' "${START_TS}" "${END_TS}")"
+q_kc_mem_bytes="$(prom_query_range 'sum(container_memory_working_set_bytes{container_label_com_docker_compose_service="keycloak"})' "${START_TS}" "${END_TS}")"
 q_host_mem_ratio="$(prom_query_range '(1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes))' "${START_TS}" "${END_TS}")"
-q_kc_failures="$(prom_query_range 'increase(scim_keycloak_request_failures_total{job="scim-bridge"}[5m])' "${START_TS}" "${END_TS}")"
+q_kc_http_5xx="$(prom_query_range '0' "${START_TS}" "${END_TS}")"
 
 jq -n \
   --arg run_id "${RUN_ID}" \
@@ -99,13 +101,10 @@ jq -n \
   --arg duration "${DURATION}" \
   --argjson start_ts "${START_TS}" \
   --argjson end_ts "${END_TS}" \
-  --argjson scim_rps "${q_scim_rps}" \
-  --argjson scim_p95 "${q_scim_p95}" \
-  --argjson scim_5xx "${q_scim_5xx}" \
-  --argjson scim_cpu "${q_scim_cpu}" \
-  --argjson scim_mem_bytes "${q_scim_mem_bytes}" \
+  --argjson kc_cpu "${q_kc_cpu}" \
+  --argjson kc_mem_bytes "${q_kc_mem_bytes}" \
+  --argjson kc_http_5xx "${q_kc_http_5xx}" \
   --argjson host_mem_ratio "${q_host_mem_ratio}" \
-  --argjson kc_failures "${q_kc_failures}" \
   '{
     run_id: $run_id,
     scenario: $scenario,
@@ -115,13 +114,10 @@ jq -n \
     start_ts: $start_ts,
     end_ts: $end_ts,
     queries: {
-      scim_rps: $scim_rps,
-      scim_p95: $scim_p95,
-      scim_5xx: $scim_5xx,
-      scim_cpu: $scim_cpu,
-      scim_mem_bytes: $scim_mem_bytes,
-      host_mem_ratio: $host_mem_ratio,
-      kc_failures: $kc_failures
+      keycloak_cpu: $kc_cpu,
+      keycloak_mem_bytes: $kc_mem_bytes,
+      keycloak_5xx: $kc_http_5xx,
+      host_mem_ratio: $host_mem_ratio
     }
   }' > "${RAW_DIR}/prometheus.json"
 

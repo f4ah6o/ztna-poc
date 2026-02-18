@@ -3,11 +3,3 @@ CREATE DATABASE keycloak OWNER keycloak;
 
 CREATE USER netbird WITH PASSWORD '{{NB_DB_PASSWORD}}';
 CREATE DATABASE netbird OWNER netbird;
-
-CREATE USER midpoint WITH PASSWORD '{{MP_DB_PASSWORD}}';
-CREATE DATABASE midpoint OWNER midpoint;
-
-\connect midpoint
-\i /docker-entrypoint-initdb.d/midpoint-postgres.sql
-\i /docker-entrypoint-initdb.d/midpoint-postgres-audit.sql
-\i /docker-entrypoint-initdb.d/midpoint-postgres-quartz.sql

@@ -5,11 +5,11 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib.sh"
 
 require_cmd jq
 
-SCENARIO="scim"
+SCENARIO="keycloak-auth"
 PROFILE="steady"
 RATE="200"
 DURATION="5m"
-REPLICAS="1 2 3"
+REPLICAS="1"
 
 for arg in "$@"; do
   case "$arg" in
@@ -27,15 +27,13 @@ SCALE_OUT="${ARTIFACTS_ROOT}/scalability/$(timestamp_utc)-${SCENARIO}-${PROFILE}
 LATEST_LINK="${ARTIFACTS_ROOT}/scalability/latest.json"
 
 dc up -d postgres keycloak >/dev/null
-dc --profile demo up -d scim-bridge >/dev/null
 dc --profile observability up -d prometheus node-exporter cadvisor >/dev/null
 
 entries='[]'
 base_t=''
 
 for r in ${REPLICAS}; do
-  log "scaling scim-bridge replicas=${r}"
-  dc --profile demo up -d --scale scim-bridge="${r}" scim-bridge >/dev/null
+  log "running baseline replica-set=${r}"
 
   run_output="$(bash "${ROOT_DIR}/scripts/loadtest/run.sh" scenario="${SCENARIO}" profile="${PROFILE}" rate="${RATE}" duration="${DURATION}" run_id="$(timestamp_utc)-scale-r${r}" ensure_services=false)"
   run_id="$(printf '%s\n' "${run_output}" | awk -F= '/^RUN_ID=/{print $2}' | tail -n1)"

@@ -26,9 +26,6 @@ services:
     volumes:
       - pg_data:/var/lib/postgresql/data
       - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
-      - ./midpoint/sql/native/postgres.sql:/docker-entrypoint-initdb.d/midpoint-postgres.sql:ro
-      - ./midpoint/sql/native/postgres-audit.sql:/docker-entrypoint-initdb.d/midpoint-postgres-audit.sql:ro
-      - ./midpoint/sql/native/postgres-quartz.sql:/docker-entrypoint-initdb.d/midpoint-postgres-quartz.sql:ro
     networks:
       - internal
     restart: unless-stopped
@@ -131,54 +128,6 @@ services:
     networks:
       - internal
       - edge
-    restart: unless-stopped
-
-  midpoint:
-    image: evolveum/midpoint:4.9
-    environment:
-      JAVA_TOOL_OPTIONS: -Xms${MP_JAVA_XMS:-256m} -Xmx${MP_JAVA_XMX:-768m} -XX:+UseSerialGC
-      MP_SET_midpoint_repository_database: postgresql
-      MP_SET_midpoint_repository_jdbcUrl: jdbc:postgresql://postgres:5432/midpoint
-      MP_SET_midpoint_repository_jdbcUsername: midpoint
-      MP_SET_midpoint_repository_jdbcPassword: ${MP_DB_PASSWORD}
-      MP_SET_midpoint_repository_hibernateHbm2ddl: ${MP_REPO_HBM2DDL:-update}
-      MP_SET_midpoint_repository_missingSchemaAction: create
-      MP_SET_midpoint_repository_upgradeableSchemaAction: upgrade
-      MP_SET_midpoint_nodeId: node1
-      MP_SET_midpoint_administrator_initialPassword: ${MP_ADMIN_PASSWORD}
-    volumes:
-      - mp_home:/opt/midpoint/var
-      - ./midpoint/config.xml:/opt/midpoint/var/config.xml:ro
-    labels:
-      - traefik.enable=true
-      - traefik.http.routers.midpoint.rule=Host(`${MP_HOSTNAME}`)
-      - traefik.http.routers.midpoint.entrypoints=websecure
-      - traefik.http.routers.midpoint.tls=true
-      - traefik.http.services.midpoint.loadbalancer.server.port=8080
-    depends_on:
-      - postgres
-    networks:
-      - internal
-      - edge
-    restart: unless-stopped
-
-  scim-bridge:
-    build:
-      context: ./scim-bridge
-    profiles: ["demo"]
-    environment:
-      PORT: 8080
-      SCIM_BRIDGE_TOKEN: ${SCIM_BRIDGE_TOKEN}
-      KC_HOSTNAME: ${KC_HOSTNAME}
-      KC_INTERNAL_URL: http://keycloak:8080
-      KC_REALM: ${KC_REALM}
-      KC_ADMIN: ${KC_ADMIN}
-      KC_ADMIN_PASSWORD: ${KC_ADMIN_PASSWORD}
-      NB_DEMO_GROUP: ${NB_DEMO_GROUP}
-    depends_on:
-      - keycloak
-    networks:
-      - internal
     restart: unless-stopped
 
   k6:
@@ -292,10 +241,25 @@ services:
     depends_on:
       - exitnode-gw
       - squidscas
+      - opa
     volumes:
       - ./exitnode/squid/squid.conf:/etc/squid/squid.conf:ro
-      - ./exitnode/squid/blocked_saas.txt:/etc/squid/blocked_saas.txt:ro
+      - ./exitnode/squid/opa_acl_helper.sh:/usr/local/bin/opa_acl_helper.sh:ro
       - squid_logs:/var/log/squid
+    restart: unless-stopped
+
+  opa:
+    image: openpolicyagent/opa:latest
+    profiles: ["exitnode"]
+    command:
+      - run
+      - --server
+      - --addr=0.0.0.0:8181
+      - /policy
+    volumes:
+      - ${OPA_POLICY_DIR:-./opa/policy}:/policy:ro
+    networks:
+      - internal
     restart: unless-stopped
 
   memcached:
@@ -448,7 +412,6 @@ networks:
 
 volumes:
   pg_data:
-  mp_home:
   nb_data:
   nb_router_data:
   nb_client_data:

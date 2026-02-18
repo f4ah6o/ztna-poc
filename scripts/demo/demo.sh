@@ -96,7 +96,7 @@ if [[ -z "${NB_ROUTER_SETUP_KEY:-}" ]]; then
 fi
 
 log "Bringing up demo profile services"
-dc --profile demo up -d scim-bridge nb-router internal-app >/dev/null
+dc --profile demo up -d nb-router internal-app >/dev/null
 
 log "Resetting nb-router local NetBird state"
 dc --profile demo exec -T nb-router sh -lc 'netbird down >/dev/null 2>&1 || true'
@@ -140,21 +140,6 @@ fi
 if [[ "${up_rc}" -ne 0 ]]; then
   log "nb-router up returned non-zero (${up_rc}) but peer is connected; continuing"
 fi
-
-log "Waiting scim-bridge health"
-for i in $(seq 1 30); do
-  if dc --profile demo exec -T scim-bridge sh -lc "wget -qO- http://127.0.0.1:8080/healthz >/dev/null" >/dev/null 2>&1; then
-    break
-  fi
-  if (( i % 5 == 0 )); then
-    log "Waiting scim-bridge health... retry ${i}/30"
-  fi
-  sleep 1
-done
-dc --profile demo exec -T scim-bridge sh -lc "wget -qO- http://127.0.0.1:8080/healthz >/dev/null"
-
-bash "${ROOT_DIR}/scripts/demo/midpoint-create-demo-user.sh"
-bash "${ROOT_DIR}/scripts/demo/scim-sync.sh"
 
 log "Approving demo user in NetBird (if pending approval)"
 admin_token_for_approve="$(
@@ -219,7 +204,6 @@ bash "${ROOT_DIR}/scripts/demo/verify-hello.sh"
 
 log "Login info:"
 log "Keycloak: https://${KC_HOSTNAME} (username: ${KC_ADMIN}, password: ${KC_ADMIN_PASSWORD})"
-log "midPoint: https://${MP_HOSTNAME} (username: administrator, password: ${MP_ADMIN_PASSWORD:-<unset>})"
 log "Demo clean:"
 log "just demo-clean-netbird  # remove NetBird demo containers/volumes"
 log "just demo-reset          # remove only demo profile containers"

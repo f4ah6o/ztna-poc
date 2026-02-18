@@ -51,11 +51,10 @@ jq -n \
   def timeout_ratio:
     if req_count == 0 then 0 else (timeout_count / req_count) end;
 
-  def cpu_peak: max_series($prom.queries.scim_cpu);
-  def mem_peak_bytes: max_series($prom.queries.scim_mem_bytes);
+  def cpu_peak: max_series($prom.queries.keycloak_cpu);
+  def mem_peak_bytes: max_series($prom.queries.keycloak_mem_bytes);
   def host_mem_peak: max_series($prom.queries.host_mem_ratio);
-  def kc_failures_peak: max_series($prom.queries.kc_failures);
-  def scim_5xx_peak: max_series($prom.queries.scim_5xx);
+  def keycloak_5xx_peak: max_series($prom.queries.keycloak_5xx);
 
   def passes_slo:
     (p95_ms != null and p95_ms < 500)
@@ -66,25 +65,19 @@ jq -n \
     if (cpu_peak != null and cpu_peak > 0.85 and (p95_ms // 0) >= 500) then
       {type:"CPU-bound", confidence:0.85,
        evidence:[
-         {metric:"scim_cpu_peak_cores", value:cpu_peak, threshold:0.85},
+         {metric:"keycloak_cpu_peak_cores", value:cpu_peak, threshold:0.85},
          {metric:"http_p95_ms", value:p95_ms, threshold:500}
        ]}
     elif (host_mem_peak != null and host_mem_peak > 0.90) then
       {type:"Memory-pressure", confidence:0.8,
        evidence:[
          {metric:"host_memory_ratio_peak", value:host_mem_peak, threshold:0.90},
-         {metric:"scim_mem_working_set_peak_bytes", value:mem_peak_bytes}
+         {metric:"keycloak_mem_working_set_peak_bytes", value:mem_peak_bytes}
        ]}
-    elif (kc_failures_peak != null and kc_failures_peak > 0) then
-      {type:"Dependency-latency", confidence:0.75,
-       evidence:[
-         {metric:"kc_failures_peak", value:kc_failures_peak, threshold:0},
-         {metric:"http_p95_ms", value:p95_ms, threshold:500}
-       ]}
-    elif (scim_5xx_peak != null and scim_5xx_peak > 0.01) then
+    elif (keycloak_5xx_peak != null and keycloak_5xx_peak > 0.01) then
       {type:"Error-bound", confidence:0.7,
        evidence:[
-         {metric:"scim_5xx_ratio_peak", value:scim_5xx_peak, threshold:0.01}
+         {metric:"keycloak_5xx_ratio_peak", value:keycloak_5xx_peak, threshold:0.01}
        ]}
     else
       {type:"None", confidence:0.6,
@@ -112,11 +105,10 @@ jq -n \
       timeout_ratio: timeout_ratio,
       req_count: req_count,
       timeout_count: timeout_count,
-      scim_cpu_peak_cores: cpu_peak,
-      scim_mem_working_set_peak_bytes: mem_peak_bytes,
+      keycloak_cpu_peak_cores: cpu_peak,
+      keycloak_mem_working_set_peak_bytes: mem_peak_bytes,
       host_memory_ratio_peak: host_mem_peak,
-      kc_failures_peak: kc_failures_peak,
-      scim_5xx_ratio_peak: scim_5xx_peak
+      keycloak_5xx_ratio_peak: keycloak_5xx_peak
     },
     slo_result: {
       profile: "standard",

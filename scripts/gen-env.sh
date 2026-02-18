@@ -14,7 +14,6 @@ POSTGRES_SUPERPASS=dev-super-pass
 KC_HOSTNAME=keycloak.localtest.me
 NB_DOMAIN=netbird.localtest.me
 NB_UI_DOMAIN=netbird-ui.localtest.me
-MP_HOSTNAME=midpoint.localtest.me
 SQUID_HOSTNAME=squid-exitnode.localtest.me
 KC_ADMIN=admin
 KC_ADMIN_PASSWORD=dev-admin-pass
@@ -23,13 +22,7 @@ KC_DB_PASSWORD=dev-kcdb-pass
 NB_OIDC_CLIENT_ID=netbird
 NB_OIDC_CLIENT_SECRET=dev-oidc-secret
 NB_DB_PASSWORD=dev-nbdb-pass
-MP_DB_PASSWORD=dev-mpdb-pass
-MP_ADMIN_PASSWORD=dev-midpoint-admin-pass
-MP_JAVA_XMS=256m
-MP_JAVA_XMX=768m
-MP_REPO_HBM2DDL=update
 NB_DEMO_GROUP=demo-users
-SCIM_BRIDGE_TOKEN=dev-scim-bridge-token
 DEMO_USERNAME=demo-user
 DEMO_EMAIL=demo-user@localtest.me
 DEMO_PASSWORD=dev-demo-password
@@ -47,6 +40,7 @@ NB_OIDC_AUDIENCE=account
 NB_ACCOUNT_DOMAIN=localtest.me
 NB_RELAY_SECRET=dev-relay-secret
 NB_DATASTORE_ENCRYPTION_KEY=MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=
+OPA_POLICY_DIR=./opa/policy
 EOF
   echo "[gen-env] Created .env with local demo defaults."
 fi
@@ -71,7 +65,6 @@ required_vars=(
   KC_HOSTNAME
   NB_DOMAIN
   NB_UI_DOMAIN
-  MP_HOSTNAME
   KC_ADMIN
   KC_ADMIN_PASSWORD
   KC_REALM
@@ -79,7 +72,6 @@ required_vars=(
   NB_OIDC_CLIENT_ID
   NB_OIDC_CLIENT_SECRET
   NB_DB_PASSWORD
-  MP_DB_PASSWORD
 )
 
 for var_name in "${required_vars[@]}"; do
@@ -96,7 +88,6 @@ done
 : "${NB_DATASTORE_ENCRYPTION_KEY:=MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=}"
 : "${NB_OIDC_AUDIENCE:=account}"
 : "${NB_DEMO_GROUP:=demo-users}"
-: "${SCIM_BRIDGE_TOKEN:=dev-scim-bridge-token}"
 : "${DEMO_USERNAME:=demo-user}"
 : "${DEMO_EMAIL:=demo-user@${NB_ACCOUNT_DOMAIN}}"
 : "${DEMO_PASSWORD:=dev-demo-password}"
@@ -110,14 +101,10 @@ done
 : "${LOKI_RETENTION:=7d}"
 : "${GRAFANA_ADMIN_USER:=admin}"
 : "${GRAFANA_ADMIN_PASSWORD:=dev-grafana-admin-pass}"
-: "${MP_ADMIN_PASSWORD:=dev-midpoint-admin-pass}"
-: "${MP_JAVA_XMS:=256m}"
-: "${MP_JAVA_XMX:=768m}"
-: "${MP_REPO_HBM2DDL:=update}"
+: "${OPA_POLICY_DIR:=./opa/policy}"
 
 append_env_default_if_missing "NB_DEMO_GROUP" "${NB_DEMO_GROUP}"
 append_env_default_if_missing "SQUID_HOSTNAME" "${SQUID_HOSTNAME}"
-append_env_default_if_missing "SCIM_BRIDGE_TOKEN" "${SCIM_BRIDGE_TOKEN}"
 append_env_default_if_missing "DEMO_USERNAME" "${DEMO_USERNAME}"
 append_env_default_if_missing "DEMO_EMAIL" "${DEMO_EMAIL}"
 append_env_default_if_missing "DEMO_PASSWORD" "${DEMO_PASSWORD}"
@@ -132,10 +119,7 @@ append_env_default_if_missing "LOKI_RETENTION" "${LOKI_RETENTION}"
 append_env_default_if_missing "GRAFANA_ADMIN_USER" "${GRAFANA_ADMIN_USER}"
 append_env_default_if_missing "GRAFANA_ADMIN_PASSWORD" "${GRAFANA_ADMIN_PASSWORD}"
 append_env_default_if_missing "NB_OIDC_AUDIENCE" "${NB_OIDC_AUDIENCE}"
-append_env_default_if_missing "MP_ADMIN_PASSWORD" "${MP_ADMIN_PASSWORD}"
-append_env_default_if_missing "MP_JAVA_XMS" "${MP_JAVA_XMS}"
-append_env_default_if_missing "MP_JAVA_XMX" "${MP_JAVA_XMX}"
-append_env_default_if_missing "MP_REPO_HBM2DDL" "${MP_REPO_HBM2DDL}"
+append_env_default_if_missing "OPA_POLICY_DIR" "${OPA_POLICY_DIR}"
 
 sql_escape() {
   printf "%s" "$1" | sed "s/'/''/g"
@@ -147,16 +131,13 @@ sed_escape() {
 
 kc_db_password_escaped="$(sql_escape "${KC_DB_PASSWORD}")"
 nb_db_password_escaped="$(sql_escape "${NB_DB_PASSWORD}")"
-mp_db_password_escaped="$(sql_escape "${MP_DB_PASSWORD}")"
 
 kc_db_password_sed="$(sed_escape "${kc_db_password_escaped}")"
 nb_db_password_sed="$(sed_escape "${nb_db_password_escaped}")"
-mp_db_password_sed="$(sed_escape "${mp_db_password_escaped}")"
 
 sed \
   -e "s|{{KC_DB_PASSWORD}}|${kc_db_password_sed}|g" \
   -e "s|{{NB_DB_PASSWORD}}|${nb_db_password_sed}|g" \
-  -e "s|{{MP_DB_PASSWORD}}|${mp_db_password_sed}|g" \
   "${TEMPLATE_FILE}" > "${OUTPUT_FILE}"
 
 mkdir -p "${NETBIRD_CONFIG_DIR}"
